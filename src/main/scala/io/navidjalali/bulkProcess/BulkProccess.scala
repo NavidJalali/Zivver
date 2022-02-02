@@ -8,14 +8,14 @@ import java.util.UUID
 trait BulkProccess:
   def writeRandom(path: String, amount: Int): IO[FileIO.Error, String]
 
-  def writeSubResults(inputPath: String): IO[FileIO.Error, Chunk[String]]
+  def writeSubResults(inputPath: String, chunkSize: Int): IO[FileIO.Error, Chunk[String]]
 
   def merge(x: ZStream[Any, FileIO.Error, Aggregated],
             y: ZStream[Any, FileIO.Error, Aggregated]): ZStream[Any, FileIO.Error, Aggregated]
 
   def reduce(files: List[String]): IO[FileIO.Error, String]
 
-  def process(inputPath: String): IO[FileIO.Error, String]
+  def process(inputPath: String, chunkSize: Int): IO[FileIO.Error, String]
 
   protected def processChunk(chunk: Chunk[Data]): Chunk[Aggregated]
 
@@ -25,9 +25,9 @@ object BulkProccess extends Accessible[BulkProccess]:
   val live = (BulkProcessLive.apply _).toLayer
 
   case class BulkProcessLive(fileIO: FileIO) extends BulkProccess:
-    override def writeSubResults(inputPath: String): IO[FileIO.Error, Chunk[String]] =
+    override def writeSubResults(inputPath: String, chunkSize: Int): IO[FileIO.Error, Chunk[String]] =
       fileIO.read(inputPath)(Data.fromString)
-        .grouped(256)
+        .grouped(chunkSize)
         .map(processChunk)
         .zipWithIndex
         .map { case (chunk, index) =>
@@ -59,8 +59,8 @@ object BulkProccess extends Accessible[BulkProccess]:
         }
           .flatMap(reduce)
 
-    override def process(inputPath: String): IO[FileIO.Error, String] =
-      writeSubResults(inputPath)
+    override def process(inputPath: String, chunkSize: Int): IO[FileIO.Error, String] =
+      writeSubResults(inputPath, chunkSize)
         .debug("Sub-Results: ")
         .map(_.toList)
         .flatMap(reduce)

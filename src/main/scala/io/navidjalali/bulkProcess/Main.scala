@@ -7,9 +7,9 @@ object Main extends ZIOAppDefault:
     for {
       processor <- ZIO.service[BulkProccess]
       _ <- ZIO.debug("Writing random data...")
-      _ <- processor.writeRandom("data.csv", 10000)
+      _ <- processor.writeRandom("data.csv", 1000000)
       _ <- ZIO.debug("Wrote random data to data.csv")
-      _ <- processor.process("data.csv")
+      _ <- processor.process(inputPath = "data.csv", chunkSize = 256)
     } yield ()
 
   override def run: ZIO[ZEnv with ZIOAppArgs, Any, Any] =
