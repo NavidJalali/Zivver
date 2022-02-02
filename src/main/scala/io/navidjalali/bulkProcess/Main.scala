@@ -9,12 +9,10 @@ object Main extends ZIOAppDefault:
       _ <- ZIO.debug("Writing random data...")
       _ <- processor.writeRandom("data.csv", 10000)
       _ <- ZIO.debug("Wrote random data to data.csv")
-      _ <-
-        processor.process("data.csv")
+      _ <- processor.process("data.csv")
     } yield ()
 
   override def run: ZIO[ZEnv with ZIOAppArgs, Any, Any] =
     app
       .catchAllCause(cause => Console.printLine(s"Error encountered: $cause"))
       .provide(BulkProccess.live, FileIO.live, Console.live)
-
